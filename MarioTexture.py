@@ -29,6 +29,7 @@ flag_left = False
 flag_right = False
 flag_up = False
 flag_down = False
+GROUND_LEVEL = 150
 
 
 #Dibujar Mario
@@ -68,6 +69,14 @@ def draw_goombas():
         glTexCoord2f(pin_x_start,1)
         glVertex2d(x,y+h)
         glEnd()
+
+#COLISIONES
+def check_collisions():
+    global goombas, mario_gameobject
+    for i in range(len(goombas)):
+        if mario_gameobject.is_collision(goombas[i]):
+            goombas.pop(i)
+            return
 
 
 def keyPressed ( key, x, y):
@@ -150,6 +159,7 @@ def timer_move_mario(value):
             mario_gameobject.change_state(MARIO_IDLE)
     
     mario_gameobject.move(input)
+    check_collisions()
     glutPostRedisplay()
     glutTimerFunc(20, timer_move_mario, 1)
 
@@ -159,11 +169,16 @@ def timer_animate_mario(value):
     glutPostRedisplay()
     glutTimerFunc(100, timer_animate_mario,1)
 
+def timer_animate_goomba(goomba):
+    goomba.animate()
+    glutPostRedisplay()
+    glutTimerFunc(100, timer_animate_goomba, goomba)
+
 def timer_create_goomba(value):
     global goombas, texture_goomba
-    goombas.append(GameObject(random.randint(0, w-40),250,40,40, texture_goomba))
+    goombas.append(GameObject(random.randint(0, w-40),GROUND_LEVEL,40,40, texture_goomba))
     glutPostRedisplay()
-    glutTimerFunc(5000, timer_create_goomba, 1)
+    glutTimerFunc(1000, timer_create_goomba, 1)
 
 #-------------------------------------------------#
 
@@ -171,7 +186,7 @@ def timer_create_goomba(value):
 
 
 def main():
-    global texture_mario, mario_gameobject
+    global texture_mario, mario_gameobject, GROUND_LEVEL
     glutInit (  )
     glutInitDisplayMode ( GLUT_RGBA )
     glutInitWindowSize ( w, h )
@@ -189,7 +204,7 @@ def main():
     texture_mario.append([loadTexture('Resources/MarioIdle.png')])
     texture_mario.append([loadTexture('Resources/MarioRun1.png'),loadTexture('Resources/MarioRun2.png'),loadTexture('Resources/MarioRun3.png')])
     texture_mario.append([loadTexture('Resources/MarioJump.png')])
-    mario_gameobject = GameObject(250,250,(int)(180/4),(int)(196/4), texture_mario)
+    mario_gameobject = GameObject(250,GROUND_LEVEL,(int)(180/4),(int)(196/4), texture_mario)
 
     texture_goomba.append([loadTexture('Resources/Goomba1.png'), loadTexture('Resources/Goomba2.png')])
 
