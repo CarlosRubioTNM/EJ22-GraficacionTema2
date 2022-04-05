@@ -16,6 +16,7 @@ MARIO_RUN = 1
 MARIO_JUMP = 2
 texture_mario = []
 texture_goomba = []
+counter_elements = 0
 
 
 #Elementos de Mario
@@ -138,18 +139,25 @@ def animate():
 
 #-----------------TIMERS--------------------------#
 def timer_move_mario(value):
-    global mario_gameobject, flag_left, flag_right
-    global MARIO_IDLE, MARIO_RUN
+    global mario_gameobject, flag_left, flag_right, flag_up
+    global MARIO_IDLE, MARIO_RUN, MARIO_JUMP
     state = mario_gameobject.get_state()
-    input = 0
+    input = {'x': 0, 'y': 0}
+    input['y'] = 1 if flag_up else 0
     if flag_right:
-        input = 1
+        input['x'] = 1
+    elif flag_left:
+        input['x'] = -1
+
+    if flag_up:
+        if state != MARIO_JUMP:
+            mario_gameobject.change_state(MARIO_JUMP)
+    elif flag_right:
         if state != MARIO_RUN:
             mario_gameobject.change_state(MARIO_RUN)
         if mario_gameobject.is_mirrored():
             mario_gameobject.set_mirror(False)
     elif flag_left:
-        input = -1
         if state != MARIO_RUN:
             mario_gameobject.change_state(MARIO_RUN)
         if not mario_gameobject.is_mirrored():
@@ -169,15 +177,22 @@ def timer_animate_mario(value):
     glutPostRedisplay()
     glutTimerFunc(100, timer_animate_mario,1)
 
-def timer_animate_goomba(goomba):
-    goomba.animate()
-    glutPostRedisplay()
-    glutTimerFunc(100, timer_animate_goomba, goomba)
+def timer_animate_goomba(id_goomba):
+    global goombas
+    for i in range(len(goombas)):
+        if goombas[i].get_id() == id_goomba:
+            goombas[i].animate()
+            glutPostRedisplay()
+            glutTimerFunc(200, timer_animate_goomba, id_goomba)
 
 def timer_create_goomba(value):
-    global goombas, texture_goomba
-    goombas.append(GameObject(random.randint(0, w-40),GROUND_LEVEL,40,40, texture_goomba))
-    glutPostRedisplay()
+    global goombas, texture_goomba, counter_elements
+    id_goomba = counter_elements
+    goomba = GameObject(id_goomba,random.randint(0, w-40),GROUND_LEVEL,40,40, texture_goomba)
+    counter_elements += 1
+    goombas.append(goomba)
+    #glutPostRedisplay()
+    timer_animate_goomba(id_goomba)
     glutTimerFunc(1000, timer_create_goomba, 1)
 
 #-------------------------------------------------#
@@ -186,7 +201,7 @@ def timer_create_goomba(value):
 
 
 def main():
-    global texture_mario, mario_gameobject, GROUND_LEVEL
+    global texture_mario, mario_gameobject, GROUND_LEVEL, counter_elements
     glutInit (  )
     glutInitDisplayMode ( GLUT_RGBA )
     glutInitWindowSize ( w, h )
@@ -204,7 +219,8 @@ def main():
     texture_mario.append([loadTexture('Resources/MarioIdle.png')])
     texture_mario.append([loadTexture('Resources/MarioRun1.png'),loadTexture('Resources/MarioRun2.png'),loadTexture('Resources/MarioRun3.png')])
     texture_mario.append([loadTexture('Resources/MarioJump.png')])
-    mario_gameobject = GameObject(250,GROUND_LEVEL,(int)(180/4),(int)(196/4), texture_mario)
+    mario_gameobject = GameObject(counter_elements,250,GROUND_LEVEL,(int)(180/4),(int)(196/4), texture_mario)
+    counter_elements += 1
 
     texture_goomba.append([loadTexture('Resources/Goomba1.png'), loadTexture('Resources/Goomba2.png')])
 

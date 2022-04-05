@@ -10,7 +10,7 @@ class GameObject:
     #__velocity = {'x': 0, 'y': 0}
     #__MAX_VELOCITY = 10
     
-    def __init__(self, x=0, y=0, w=0, h=0, frames = []):
+    def __init__(self, id_element=0,x=0, y=0, w=0, h=0, frames = []):
         self.__position = {'x': 0, 'y': 0}
         self.__last_position = {'x': 0, 'y': 0}
         self.__size = {'x': 0, 'y': 0}
@@ -20,7 +20,9 @@ class GameObject:
         self.__mirror = False #mirror es False cuando voltea hacia la derecha
         self.__velocity = {'x': 0, 'y': 0}
         self.__MAX_VELOCITY = 10
+        self.__jumping = False
         
+        self.__id_element = id_element
         self.__position['x'] = x
         self.__position['y'] = y
         self.__last_position['x'] = x
@@ -30,17 +32,35 @@ class GameObject:
         self.animator = frames
 
     def move(self, input):
-        '''Input:
+        '''input['x']:
         1.- Mover hacia la derecha
         0.- No se mueve
         -1.- Mover hacia la izquierda'''
-        if input == 0:
+
+        if not self.__jumping and input['y'] == 1:
+            self.__jumping = True
+            self.__velocity['y'] = self.__MAX_VELOCITY
+
+        if self.__jumping:
+            self.__velocity['y'] -= 0.2
+            if self.__velocity['y'] < -self.__MAX_VELOCITY:
+                self.__velocity['y'] = -self.__MAX_VELOCITY
+            self.__last_position['y'] = self.__position['y']
+            self.__position['y'] += self.__velocity['y']
+            if self.__position['y'] <= 150:
+                self.__position['y'] = 150
+                self.__jumping = False
+
+
+
+
+        if input['x'] == 0:
             if self.__velocity['x'] != 0:
                 self.__velocity['x'] -= 0.1*self.__velocity['x']
             if abs(self.__velocity['x']) < 0.01:
                 self.__velocity['x'] = 0 
         else:
-            self.__velocity['x'] = self.__position['x'] - self.__last_position['x'] + 0.5*input
+            self.__velocity['x'] = self.__position['x'] - self.__last_position['x'] + 0.5*input['x']
             if self.__velocity['x'] > self.__MAX_VELOCITY:
                 self.__velocity['x'] = self.__MAX_VELOCITY
             if self.__velocity['x'] < -self.__MAX_VELOCITY:
@@ -84,5 +104,11 @@ class GameObject:
 
     def is_mirrored(self):
         return self.__mirror
+    
+    def get_id(self):
+        return self.__id_element
+    
+    def get_velocity(self):
+        return self.__velocity
         
 
