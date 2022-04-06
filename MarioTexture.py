@@ -24,6 +24,7 @@ mario_gameobject = GameObject()
 
 #Elementos Goomba
 goombas = []
+dummy_goomba = GameObject(-1,0,0,40,40,texture_goomba) #Sirve para checar colisiones antes de crear el goomba bueno
 
 #Movimiento
 flag_left = False
@@ -148,16 +149,20 @@ def timer_move_mario(value):
         input['x'] = 1
     elif flag_left:
         input['x'] = -1
+    
+    mario_gameobject.move(input)
+    velocity = mario_gameobject.get_velocity()
 
-    if flag_up:
+    if velocity['y'] != 0:
+        print(velocity['y'])
         if state != MARIO_JUMP:
             mario_gameobject.change_state(MARIO_JUMP)
-    elif flag_right:
+    elif velocity['x'] > 0:
         if state != MARIO_RUN:
             mario_gameobject.change_state(MARIO_RUN)
         if mario_gameobject.is_mirrored():
             mario_gameobject.set_mirror(False)
-    elif flag_left:
+    elif velocity['x'] < 0:
         if state != MARIO_RUN:
             mario_gameobject.change_state(MARIO_RUN)
         if not mario_gameobject.is_mirrored():
@@ -165,8 +170,8 @@ def timer_move_mario(value):
     else:
         if state != MARIO_IDLE:
             mario_gameobject.change_state(MARIO_IDLE)
-    
-    mario_gameobject.move(input)
+
+
     check_collisions()
     glutPostRedisplay()
     glutTimerFunc(20, timer_move_mario, 1)
@@ -177,6 +182,15 @@ def timer_animate_mario(value):
     glutPostRedisplay()
     glutTimerFunc(100, timer_animate_mario,1)
 
+def timer_move_goomba(id_goomba):
+    global goombas, w
+    for i in range(len(goombas)):
+        if goombas[i].get_id() == id_goomba:
+            goombas[i].static_move(goombas,w)
+            glutPostRedisplay()
+            glutTimerFunc(20, timer_move_goomba, id_goomba)
+
+
 def timer_animate_goomba(id_goomba):
     global goombas
     for i in range(len(goombas)):
@@ -186,14 +200,25 @@ def timer_animate_goomba(id_goomba):
             glutTimerFunc(200, timer_animate_goomba, id_goomba)
 
 def timer_create_goomba(value):
-    global goombas, texture_goomba, counter_elements
+    global goombas, texture_goomba, counter_elements, dummy_goomba
     id_goomba = counter_elements
-    goomba = GameObject(id_goomba,random.randint(0, w-40),GROUND_LEVEL,40,40, texture_goomba)
+    pos_x = random.randint(0, w-40)
+    flag_correct = False
+    #while not flag_correct:
+    #    dummy_goomba.set_position({'x':pos_x, 'y':GROUND_LEVEL})
+        #Checar colisiones de goomba nuevo
+    #    for i in range(len(goombas)):
+    #        if dummy_goomba.is_collision(goombas[i]):
+
+
+
+    goomba = GameObject(id_goomba,pos_x,GROUND_LEVEL,40,40, texture_goomba)
     counter_elements += 1
     goombas.append(goomba)
     #glutPostRedisplay()
     timer_animate_goomba(id_goomba)
-    glutTimerFunc(1000, timer_create_goomba, 1)
+    timer_move_goomba(id_goomba)
+    glutTimerFunc(5000, timer_create_goomba, 1)
 
 #-------------------------------------------------#
 

@@ -31,25 +31,53 @@ class GameObject:
         self.__size['y'] = h
         self.animator = frames
 
+    def static_move(self, boxes, scr_w):
+        if self.__velocity['x'] == 0:
+            self.__velocity['x'] = 1
+        
+        self.__position['x'] += self.__velocity['x']
+
+        #Ver si colisiona con otros elementos
+        for i in range(len(boxes)):
+            box = boxes[i]
+            if box.get_id() != self.__id_element:
+                if self.is_collision(box):
+                    self.__position['x'] -= self.__velocity['x']
+                    self.__velocity['x'] *= -1
+        
+        #Ver si colisiona con la pantalla
+        if self.__position['x'] + self.__size['x'] > scr_w:
+            self.__position['x'] = scr_w - self.__size['x']
+            self.__velocity['x'] *= -1
+        if self.__position['x']  < 0:
+            self.__position['x'] = 0
+            self.__velocity['x'] *= -1
+
+        
+
+
     def move(self, input):
         '''input['x']:
         1.- Mover hacia la derecha
         0.- No se mueve
         -1.- Mover hacia la izquierda'''
+        gravity = -0.25
+        deltaT = 3
 
         if not self.__jumping and input['y'] == 1:
             self.__jumping = True
             self.__velocity['y'] = self.__MAX_VELOCITY
 
         if self.__jumping:
-            self.__velocity['y'] -= 0.2
+            self.__velocity['y'] += gravity*deltaT
             if self.__velocity['y'] < -self.__MAX_VELOCITY:
                 self.__velocity['y'] = -self.__MAX_VELOCITY
             self.__last_position['y'] = self.__position['y']
-            self.__position['y'] += self.__velocity['y']
+            self.__position['y'] += self.__velocity['y']*deltaT
             if self.__position['y'] <= 150:
                 self.__position['y'] = 150
                 self.__jumping = False
+                self.__velocity['y'] = 0
 
 
 
@@ -60,7 +88,7 @@ class GameObject:
             if abs(self.__velocity['x']) < 0.01:
                 self.__velocity['x'] = 0 
         else:
-            self.__velocity['x'] = self.__position['x'] - self.__last_position['x'] + 0.5*input['x']
+            self.__velocity['x'] = self.__position['x'] - self.__last_position['x'] + input['x']
             if self.__velocity['x'] > self.__MAX_VELOCITY:
                 self.__velocity['x'] = self.__MAX_VELOCITY
             if self.__velocity['x'] < -self.__MAX_VELOCITY:
@@ -95,6 +123,9 @@ class GameObject:
     
     def get_position(self):
         return self.__position['x'], self.__position['y']
+
+    def set_position(self, pos):
+        self.__position = pos
     
     def get_size(self):
         return self.__size['x'], self.__size['y']
