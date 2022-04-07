@@ -6,8 +6,18 @@ from modules.transforms import *
 from modules.textures import loadTexture
 from modules.gameobject import GameObject
 import random
+from playsound import playsound #Instalar con pip install playsound==1.2.2
+from threading import Thread
 
 w,h= 1000,500
+
+
+#Texturas fondo
+texture_floor = []
+texture_mountain = []
+texture_cloud = []
+clouds_coord = []
+
 
 #Textura de Mario
 #Arreglo bidimensional 
@@ -31,8 +41,96 @@ flag_left = False
 flag_right = False
 flag_up = False
 flag_down = False
-GROUND_LEVEL = 150
+GROUND_LEVEL = 100
 
+
+#SONIDOS
+def play_stomp():
+    playsound('Resources/smb_stomp.wav')
+
+def play_jump():
+    playsound('Resources/smb_jump-super.wav')
+
+
+#Dibujar fondo
+def draw_background():
+    global texture_floor, texture_mountain, texture_cloud
+    global clouds_coord
+    #Dibujar 5 nubes
+    glBindTexture(GL_TEXTURE_2D, texture_cloud[0])
+    for i in range(len(clouds_coord)):
+        x_coord = clouds_coord[i][0]
+        y_coord = clouds_coord[i][1]
+        width = clouds_coord[i][2]
+        height = clouds_coord[i][3]
+        
+        
+        glBegin(GL_POLYGON)
+        glTexCoord2f(0,0)
+        glVertex2d(x_coord,y_coord)
+        glTexCoord2f(1,0)
+        glVertex2d(x_coord + width,y_coord)
+        glTexCoord2f(1,1)
+        glVertex2d(x_coord + width,y_coord + height)
+        glTexCoord2f(0,1)
+        glVertex2d(x_coord,y_coord + height)
+        glEnd()
+
+    #Dibujar montaña pequeña
+    x_coord = 500
+    y_coord = 90
+    width = 317
+    height = 150
+    glBindTexture(GL_TEXTURE_2D, texture_mountain[0])
+    glBegin(GL_POLYGON)
+    glTexCoord2f(0,0)
+    glVertex2d(x_coord,y_coord)
+    glTexCoord2f(1,0)
+    glVertex2d(x_coord + width,y_coord)
+    glTexCoord2f(1,1)
+    glVertex2d(x_coord + width,y_coord + height)
+    glTexCoord2f(0,1)
+    glVertex2d(x_coord,y_coord + height)
+    glEnd()
+    
+    #Dibujar montaña
+    x_coord = 100
+    y_coord = 90
+    width = 436
+    height = 200
+    
+    glBegin(GL_POLYGON)
+    glTexCoord2f(0,0)
+    glVertex2d(x_coord,y_coord)
+    glTexCoord2f(1,0)
+    glVertex2d(x_coord + width,y_coord)
+    glTexCoord2f(1,1)
+    glVertex2d(x_coord + width,y_coord + height)
+    glTexCoord2f(0,1)
+    glVertex2d(x_coord,y_coord + height)
+    glEnd()
+
+    #Dibujar piso
+    n_tiles_x = (int)(w/50) + 1
+    n_tiles_y = (int)(100/50)
+    for i in range(n_tiles_x):
+        for j in range(n_tiles_y):
+            x_coord = i*50
+            y_coord = j*50
+            width = 50
+            height = 50
+            glBindTexture(GL_TEXTURE_2D, texture_floor[0])
+            glBegin(GL_POLYGON)
+            glTexCoord2f(0,0)
+            glVertex2d(x_coord,y_coord)
+            glTexCoord2f(1,0)
+            glVertex2d(x_coord + width,y_coord)
+            glTexCoord2f(1,1)
+            glVertex2d(x_coord + width,y_coord + height)
+            glTexCoord2f(0,1)
+            glVertex2d(x_coord,y_coord + height)
+            glEnd()
+    
 
 #Dibujar Mario
 def draw_mario():
@@ -77,6 +175,8 @@ def check_collisions():
     global goombas, mario_gameobject
     for i in range(len(goombas)):
         if mario_gameobject.is_collision(goombas[i]):
+            thread_stomp = Thread(target=play_stomp)
+            thread_stomp.start()
             goombas.pop(i)
             return
 
@@ -106,7 +206,7 @@ def keyUp(key, x, y):
         flag_right = False
 
 def init():
-    glClearColor ( 1.0, 1.0, 1.0, 0.0 )
+    glClearColor ( 0.5725, 0.5647, 1.0, 0.0 )
     glEnable(GL_TEXTURE_2D)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -128,6 +228,7 @@ def display():
     glLoadIdentity()
 
     #---------------------DIBUJAR AQUI------------------------#
+    draw_background()
     draw_mario()
     draw_goombas()
     #---------------------------------------------------------#
@@ -149,12 +250,15 @@ def timer_move_mario(value):
         input['x'] = 1
     elif flag_left:
         input['x'] = -1
-    
+    jumping_before = mario_gameobject.is_jumping()
     mario_gameobject.move(input)
+    if not jumping_before and mario_gameobject.is_jumping():
+        thread_jump = Thread(target=play_jump)
+        thread_jump.start()
+
     velocity = mario_gameobject.get_velocity()
 
     if velocity['y'] != 0:
-        print(velocity['y'])
         if state != MARIO_JUMP:
             mario_gameobject.change_state(MARIO_JUMP)
     elif velocity['x'] > 0:
@@ -202,13 +306,17 @@ def timer_animate_goomba(id_goomba):
 def timer_create_goomba(value):
     global goombas, texture_goomba, counter_elements, dummy_goomba
     id_goomba = counter_elements
-    pos_x = random.randint(0, w-40)
+    pos_x = 0
     flag_correct = False
-    #while not flag_correct:
-    #    dummy_goomba.set_position({'x':pos_x, 'y':GROUND_LEVEL})
+    while not flag_correct:
+        flag_correct = True
+        pos_x = random.randint(0, w-40)
+        dummy_goomba.set_position({'x':pos_x, 'y':GROUND_LEVEL})
         #Checar colisiones de goomba nuevo
-    #    for i in range(len(goombas)):
-    #        if dummy_goomba.is_collision(goombas[i]):
+        for i in range(len(goombas)):
+            if dummy_goomba.is_collision(goombas[i]):
+                flag_correct = False
+                i = len(goombas)
 
 
 
@@ -218,7 +326,7 @@ def timer_create_goomba(value):
     #glutPostRedisplay()
     timer_animate_goomba(id_goomba)
     timer_move_goomba(id_goomba)
-    glutTimerFunc(5000, timer_create_goomba, 1)
+    glutTimerFunc(3000, timer_create_goomba, 1)
 
 #-------------------------------------------------#
 
@@ -227,6 +335,7 @@ def timer_create_goomba(value):
 
 def main():
     global texture_mario, mario_gameobject, GROUND_LEVEL, counter_elements
+    global texture_cloud, texture_floor, texture_mountain, clouds_coord
     glutInit (  )
     glutInitDisplayMode ( GLUT_RGBA )
     glutInitWindowSize ( w, h )
@@ -239,6 +348,20 @@ def main():
     glutKeyboardFunc( keyPressed )
     glutKeyboardUpFunc(keyUp)
     init()
+
+
+    #Texturas fondo
+    texture_floor.append(loadTexture('Resources/Floor.png'))
+    texture_mountain.append(loadTexture('Resources/BigMountain.png'))
+    texture_cloud.append(loadTexture('Resources/BigCloud.png'))
+
+    #Coordenadas de nubes
+    for i in range(5):
+        height = random.randint(30,100)
+        width = (int)(height*2.67)
+        x_coord = random.randint(0,w-width)
+        y_coord = random.randint(120,h-height)
+        clouds_coord.append([x_coord,y_coord,width,height])
 
     #Cargar textura
     texture_mario.append([loadTexture('Resources/MarioIdle.png')])
